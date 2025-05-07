@@ -1,0 +1,137 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<h5>@ViewBag.Message</h5>
+
+<div id="dropzone" class="dropzone">
+    <p>Dosyaları buraya sürükleyip bırakın</p>
+    <div id="fileList" class="file-list"></div>
+</div>
+
+
+<button id="uploadButton" onclick="submitForm()">Dosyaları Yükle</button>
+<button id="pauseButton" onclick="pauseUpload()">Durdur</button>
+<button id="resumeButton" onclick="resumeUpload()" disabled>Devam Et</button>
+
+<script>
+
+    var droppedFiles = [];
+
+
+    var dropzone = document.getElementById('dropzone');
+
+    dropzone.ondragover = function(e) {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    };
+
+    dropzone.ondragleave = function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+    };
+
+    dropzone.ondrop = function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+
+        // Sürüklenen dosyaları al
+        var files = e.dataTransfer.files;
+        for (var i = 0; i < files.length; i++) {
+            droppedFiles.push(files[i]);
+            displayFile(files[i]);
+        }
+    };
+
+    // Sürüklenen dosyaları listele
+    function displayFile(file) {
+        var fileList = document.getElementById('fileList');
+        var fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.textContent = file.name + " (" + (file.size / 1024).toFixed(2) + " KB)";
+        fileList.appendChild(fileItem);
+    }
+
+    // Form gönderme işlemi (dosya yükleme)
+    function submitForm() {
+        var formData = new FormData();
+
+
+        for (var i = 0; i < droppedFiles.length; i++) {
+            formData.append('postedFiles', droppedFiles[i]);
+        }
+
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '@Url.Action("Index", "Home")', true);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                alert('Dosyalar başarıyla yüklendi.');
+                document.getElementById('fileList').innerHTML = ''; // Listeyi temizle
+                droppedFiles = []; // Dosya listesini temizle
+            } else {
+                alert('Dosya yükleme sırasında bir hata oluştu.');
+            }
+        };
+        xhr.send(formData);
+    }
+
+    // Yükleme durdurma ve devam ettirme fonksiyonları
+    function pauseUpload() {
+        $.ajax({
+            url: '@Url.Action("PauseUpload")',
+            type: 'POST',
+            success: function (result) {
+                if (result.success) {
+                    document.getElementById("pauseButton").disabled = true;
+                    document.getElementById("resumeButton").disabled = false;
+                }
+            }
+        });
+    }
+
+    function resumeUpload() {
+        $.ajax({
+            url: '@Url.Action("ResumeUpload")',
+            type: 'POST',
+            success: function (result) {
+                if (result.success) {
+                    document.getElementById("pauseButton").disabled = false;
+                    document.getElementById("resumeButton").disabled = true;
+                }
+            }
+        });
+    }
+</script>
+
+<style>
+
+    .dropzone {
+        width: 400px;
+        height: 200px;
+        border: 2px dashed #ccc;
+        border-radius: 10px;
+        text-align: center;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+        .dropzone.dragover {
+            background-color: #f0f0f0;
+        }
+
+
+    .file-list {
+        max-height: 130px;
+        overflow-y: auto;
+        border-top: 1px solid #ccc;
+        padding: 10px;
+        width: 100%;
+    }
+
+    .file-item {
+        padding: 5px;
+        border-bottom: 1px solid #ccc;
+    }
+</style>
